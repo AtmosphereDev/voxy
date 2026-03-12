@@ -163,7 +163,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
                              mod_name               : "Voxy",
                              mod_license            : "All-Rights-Reserved",
                              mod_version            : project.version,
-                             mod_authors            : "Cortex",
+                             mod_authors            : "Cortex, m3t4f1v3, 1luik, VinkyV",
                              mod_description        : "Far distance rendering mod utilising LoDs"]
     inputs.properties replaceProperties
     expand replaceProperties
