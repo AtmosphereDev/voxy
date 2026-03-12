@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
     id 'idea'
     id 'maven-publish'
-    id 'net.neoforged.gradle.userdev' version '7.1.13'
+    id 'net.neoforged.gradle.userdev' version '7.1.14'
 }
 
 def isInGHA = System.getenv("GITHUB_ACTIONS") == "true"
