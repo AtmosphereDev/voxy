@@ -1,4 +1,4 @@
-package me.cortex.voxy.commonImpl.mixin.chunky;
+package me.cortex.voxy.client.mixin.chunky;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
@@ -8,7 +8,6 @@ import net.minecraft.server.level.ServerChunkCache;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
-//import org.popcraft.chunky.mixin.ServerChunkCacheMixin;
 import org.popcraft.chunky.platform.NeoForgeWorld;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

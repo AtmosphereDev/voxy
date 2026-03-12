@@ -1,11 +1,9 @@
 package me.cortex.voxy.client.core.model.bakery;
 
-import me.cortex.voxy.client.mixin.minecraft.AccessorEmptyTextureStateShard;
 import me.cortex.voxy.common.Logger;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.Model;
-import net.minecraft.client.renderer.RenderType;
-// import net.minecraft.client.renderer.SubmitNodeStorage;
+import net.minecraft.client.renderer.*;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.EntityBlock;
@@ -30,7 +28,7 @@ public class BakedBlockEntityModel {
         for (var layer : this.layers) {
             if (layer.consumer.isEmpty()) continue;
             if (layer.layer instanceof RenderType.CompositeRenderType mp) {
-                ResourceLocation textureId = ((AccessorEmptyTextureStateShard)mp.state.textureState).voxy$cutoutTexture().orElse(null);
+                ResourceLocation textureId = mp.state.textureState.cutoutTexture().orElse(null);
                 if (textureId == null) {
                     Logger.error("ERROR: Empty texture id for layer: " + layer);
                 } else {

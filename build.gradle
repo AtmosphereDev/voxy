@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
     id 'idea'
     id 'maven-publish'
-    id 'net.neoforged.gradle.userdev' version '7.1.14'
+    id 'net.neoforged.moddev' version '2.0.140'
 }
 
 def isInGHA = System.getenv("GITHUB_ACTIONS") == "true"
@@ -61,53 +61,73 @@ repositories {
 
 // Default run configurations.
 // These can be tweaked, removed, or duplicated as needed.
-runs {
-    // applies to all the run configs below
-    configureEach {
-        // Recommended logging data for a userdev environment
-        // The markers can be added/remove as needed separated by commas.
-        // "SCAN": For mods scan.
-        // "REGISTRIES": For firing of registry events.
-        // "REGISTRYDUMP": For getting the contents of all registries.
-        systemProperty 'forge.logging.markers', 'REGISTRIES'
+neoForge {
+    // Specify the version of NeoForge to use.
+    version = project.neo_version
 
-        // Recommended logging level for the console
-        // You can set various levels here.
-        // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
-        systemProperty 'forge.logging.console.level', 'debug'
+    // This line is optional. Access Transformers are automatically detected
+    accessTransformers = project.files('src/main/resources/META-INF/accesstransformer.cfg')
 
-        modSource project.sourceSets.main
+    // Default run configurations.
+    // These can be tweaked, removed, or duplicated as needed.
+    runs {
+        client {
+            client()
+
+            // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        server {
+            server()
+            programArgument '--nogui'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        // This run config launches GameTestServer and runs all registered gametests, then exits.
+        // By default, the server will crash when no gametests are provided.
+        // The gametest system is also enabled by default for other run configs under the /test command.
+        gameTestServer {
+            type = "gameTestServer"
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
+        data {
+            data()
+
+            // example of overriding the workingDirectory set in configureEach above, uncomment if you want to use it
+            // gameDirectory = project.file('run-data')
+
+            // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
+            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+
+        // applies to all the run configs above
+        configureEach {
+            // Recommended logging data for a userdev environment
+            // The markers can be added/remove as needed separated by commas.
+            // "SCAN": For mods scan.
+            // "REGISTRIES": For firing of registry events.
+            // "REGISTRYDUMP": For getting the contents of all registries.
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+
+            // Recommended logging level for the console
+            // You can set various levels here.
+            // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
+            logLevel = org.slf4j.event.Level.DEBUG
+        }
     }
 
-    client {
-        // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
-        systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-        //增加库到类路径
-        //classpath ""
-    }
-
-    server {
-        systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-        argument '--nogui'
-    }
-
-    // This run config launches GameTestServer and runs all registered gametests, then exits.
-    // By default, the server will crash when no gametests are provided.
-    // The gametest system is also enabled by default for other run configs under the /test command.
-    gameTestServer {
-        systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-    }
-
-    data {
-        // example of overriding the workingDirectory set in configureEach above, uncomment if you want to use it
-        // workingDirectory project.file('run-data')
-
-        // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
-        arguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+    mods {
+        // define mod <-> source bindings
+        // these are used to tell the game which sources are for which mod
+        // mostly optional in a single mod project
+        // but multi mod projects should define one per mod
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
     }
 }
-// 启用jarjar系统
-jarJar.enable()
 
 configurations {
     runtimeClasspath.extendsFrom localRuntime
@@ -133,39 +153,29 @@ def gitCommitHash = { ->
 
 def buildtime = {System.currentTimeSeconds()}
 
-processResources {
-    def time = buildtime()
-    def hash = gitCommitHash()
-    def version = project.version
-
-    inputs.properties("version": version, "commit": hash, "buildtime": time)
-    filesMatching("fabric.mod.json") {
-        expand "version": version, "commit": hash, "buildtime": time
-    }
-    
-    // NeoForge mod configuration
-    var replaceProperties = [
-            minecraft_version      : project.minecraft_version,
-            minecraft_version_range: project.minecraft_version_range,
-            neo_version            : project.neo_version,
-            loader_version_range   : project.loader_version_range,
-            mod_id                 : project.mod_id,
-            mod_name               : "Voxy",
-            mod_license            : "All-Rights-Reserved",
-            mod_version            : project.version,
-            mod_authors            : "Cortex",
-            mod_description        : "Far distance rendering mod utilising LoDs"
-    ]
+var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
+    var replaceProperties = [minecraft_version      : project.minecraft_version,
+                             minecraft_version_range: project.minecraft_version_range,
+                             neo_version            : project.neo_version,
+                             neo_version_range      : project.neo_version_range,
+                             loader_version_range   : project.loader_version_range,
+                             mod_id                 : project.mod_id,
+                             mod_name               : "Voxy",
+                             mod_license            : "All-Rights-Reserved",
+                             mod_version            : project.version,
+                             mod_authors            : "Cortex",
+                             mod_description        : "Far distance rendering mod utilising LoDs"]
     inputs.properties replaceProperties
-
-    filesMatching(['META-INF/neoforge.mods.toml']) {
-        expand replaceProperties
-    }
+    expand replaceProperties
+    from "src/main/templates"
+    into "build/generated/sources/modMetadata"
 }
-minecraft.accessTransformers.file rootProject.file('src/main/resources/META-INF/accesstransformer.cfg')
-//loom {
-    //accessWidenerPath = file("src/main/resources/voxy.accesswidener")
-//}
+
+// Include the output of "generateModMetadata" as an input directory for the build
+// this works with both building through Gradle and the IDE.
+sourceSets.main.resources.srcDir generateModMetadata
+// To avoid having to run "generateModMetadata" manually, make it run on every project reload
+neoForge.ideSyncTask generateModMetadata
 
 def modRuntimeOnlyMsk = {arg->}
 if (!isInGHA) {
@@ -260,14 +270,6 @@ jar {
     from("LICENSE") {
         rename { "${it}_${project.archives_base_name}"}
     }
-}
-
-
-
-// jarjar任务配置
-jarJar {
-    // 配置jarjar任务的基本设置
-    // 依赖排除通过main dependencies块中的jarJar配置处理
 }
 
 jar {

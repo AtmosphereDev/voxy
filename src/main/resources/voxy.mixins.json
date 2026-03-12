@@ -14,7 +14,6 @@
     "iris.MixinProgramSet",
     "iris.MixinShaderPackSourceNames",
     "iris.MixinStandardMacros",
-    "minecraft.AccessorEmptyTextureStateShard",
     "minecraft.MixinClientChunkCache",
     "minecraft.MixinClientCommonPacketListenerImpl",
     "minecraft.MixinClientLevel",
@@ -32,6 +31,10 @@
     "sodium.MixinRenderSectionManager",
     "sodium.MixinSodiumOptionsGUI",
     "sodium.MixinSodiumWorldRenderer"
+  ],
+  "mixins": [
+    "chunky.MixinFabricWorld",
+    "minecraft.MixinWorld"
   ],
   "injectors": {
     "defaultRequire": 1
