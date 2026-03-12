@@ -25,7 +25,6 @@
     "minecraft.MixinMinecraft",
     "minecraft.MixinRenderSystem",
     "minecraft.MixinWindow",
-    "nvidium.MixinRenderPipeline",
     "sodium.AccessorChunkTracker",
     "sodium.AccessorSodiumWorldRenderer",
     "sodium.MixinChunkJobQueue",
