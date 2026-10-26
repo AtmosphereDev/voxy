@@ -5,7 +5,7 @@ import me.cortex.voxy.client.core.gl.shader.Shader;
 import static org.lwjgl.opengl.GL43C.*;
 
 public class GlDebug {
-    public static final boolean GL_DEBUG = System.getProperty("voxy.glDebug", "false").equals("true");
+    public static final boolean GL_DEBUG = System.getProperty("voxy.glDebug", "false").equals("true") && !VGL.METAL;
 
 
     public static void push() {

@@ -13,9 +13,13 @@ import org.lwjgl.opengl.ARBDirectStateAccess;
 import org.lwjgl.system.MemoryUtil;
 
 import static me.cortex.voxy.client.core.rendering.util.UploadStream.alignUp;
-import static org.lwjgl.opengl.GL30C.glBindBufferRange;
-import static org.lwjgl.opengl.GL42C.glMemoryBarrier;
 import static org.lwjgl.opengl.GL43C.*;
+import static me.cortex.voxy.client.core.gl.VGL.glBindBufferBase;
+import static me.cortex.voxy.client.core.gl.VGL.glBindBufferRange;
+import static me.cortex.voxy.client.core.gl.VGL.glCopyNamedBufferSubData;
+import static me.cortex.voxy.client.core.gl.VGL.glDispatchCompute;
+import static me.cortex.voxy.client.core.gl.VGL.glMemoryBarrier;
+import static me.cortex.voxy.client.core.gl.VGL.glUniform1ui;
 
 //Uses compute shaders to compute the last 256 rendered section (64x64 workgroup size maybe)
 // done via warp level sort, then workgroup sort (shared memory), (/w sorting network)

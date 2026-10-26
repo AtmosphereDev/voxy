@@ -11,6 +11,10 @@ import static org.lwjgl.opengl.GL11.GL_TEXTURE_MIN_FILTER;
 import static org.lwjgl.opengl.GL11C.GL_DEPTH;
 import static org.lwjgl.opengl.GL14.GL_DEPTH_COMPONENT24;
 import static org.lwjgl.opengl.GL30C.*;
+import static me.cortex.voxy.client.core.gl.VGL.glBindFramebuffer;
+import static me.cortex.voxy.client.core.gl.VGL.glTextureParameteri;
+import static me.cortex.voxy.client.core.gl.VGL.nglClearNamedFramebufferfv;
+import static me.cortex.voxy.client.core.gl.VGL.nglClearNamedFramebufferiv;
 
 public class DepthFramebuffer {
     private final int depthType;

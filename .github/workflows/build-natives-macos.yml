@@ -1,0 +1,58 @@
+name: build-natives-macos
+
+# Builds the Metal backend (native/voxymtl) for macOS arm64 + x64 and a mod jar that bundles it
+on: [ workflow_dispatch ]
+jobs:
+  natives:
+    runs-on: macos-14
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Setup xmake
+        uses: xmake-io/github-action-setup-xmake@v1
+        with:
+          xmake-version: latest
+
+      - name: Build natives
+        run: ./native/build.sh
+
+      - name: Upload natives
+        uses: actions/upload-artifact@v4
+        with:
+          name: voxymtl-natives
+          path: native/dist
+
+  jar:
+    needs: natives
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Download natives
+        uses: actions/download-artifact@v4
+        with:
+          name: voxymtl-natives
+          path: native/dist
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-disabled: true
+          cache-cleanup: always
+
+      - name: Gradle build
+        run: ./gradlew build
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: voxy-with-macos-natives
+          path: build/libs/*.jar

@@ -1,14 +1,17 @@
 package me.cortex.voxy.client.core.gl;
 
+import me.cortex.voxy.client.core.gl.metal.MetalNative;
 import me.cortex.voxy.common.util.TrackedObject;
 
+import static me.cortex.voxy.client.core.gl.VGL.glCheckNamedFramebufferStatus;
+import static me.cortex.voxy.client.core.gl.VGL.glNamedFramebufferDrawBuffers;
+import static me.cortex.voxy.client.core.gl.VGL.glNamedFramebufferTexture;
 import static org.lwjgl.opengl.GL45C.*;
-import static org.lwjgl.opengl.GL45C.glNamedFramebufferDrawBuffers;
 
 public class GlFramebuffer extends TrackedObject {
     public final int id;
     public GlFramebuffer() {
-        this.id = glCreateFramebuffers();
+        this.id = VGL.METAL ? (int) MetalNative.call(MetalNative.OP_FB_CREATE) : glCreateFramebuffers();
     }
 
     public GlFramebuffer bind(int attachment, GlTexture texture) {
@@ -33,7 +36,11 @@ public class GlFramebuffer extends TrackedObject {
     @Override
     public void free() {
         super.free0();
-        glDeleteFramebuffers(this.id);
+        if (VGL.METAL) {
+            MetalNative.call(MetalNative.OP_FB_DELETE, this.id);
+        } else {
+            glDeleteFramebuffers(this.id);
+        }
     }
 
     public GlFramebuffer verify() {

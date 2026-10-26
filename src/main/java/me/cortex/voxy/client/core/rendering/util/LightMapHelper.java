@@ -1,14 +1,14 @@
 package me.cortex.voxy.client.core.rendering.util;
 
-import static org.lwjgl.opengl.GL33.glBindSampler;
-import static org.lwjgl.opengl.GL45.glBindTextureUnit;
 
 import net.minecraft.client.Minecraft;
+import static me.cortex.voxy.client.core.gl.VGL.glBindSampler;
+import static me.cortex.voxy.client.core.gl.VGL.glBindTextureUnit;
 
 public class LightMapHelper {
     public static void bind(int lightingIndex) {
         glBindSampler(lightingIndex, 0);
-        glBindTextureUnit(lightingIndex, getLightmapTextureId());
+        glBindTextureUnit(lightingIndex, me.cortex.voxy.client.core.gl.VGL.METAL ? me.cortex.voxy.client.core.gl.metal.MacInterop.lightmapTexture() : getLightmapTextureId());
     }
 
     public static int getLightmapTextureId() {

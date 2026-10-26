@@ -63,7 +63,7 @@ public record RenderProperties(boolean isZero2One, boolean isReverseZ, boolean u
                 false,
                 false);
 
-        if (IrisUtil.IRIS_INSTALLED && IrisUtil.SHADER_SUPPORT) {
+        if (!me.cortex.voxy.client.core.gl.VGL.METAL && IrisUtil.IRIS_INSTALLED && IrisUtil.SHADER_SUPPORT) {
             properties = new RenderProperties(properties.isZero2One(), properties.isReverseZ(), irisUseBlockAtlasUv());
         }
 

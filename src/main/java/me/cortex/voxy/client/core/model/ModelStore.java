@@ -12,11 +12,14 @@ import static org.lwjgl.opengl.GL11C.GL_NEAREST;
 import static org.lwjgl.opengl.GL11C.GL_NEAREST_MIPMAP_LINEAR;
 import static org.lwjgl.opengl.GL12C.GL_TEXTURE_MAX_LOD;
 import static org.lwjgl.opengl.GL12C.GL_TEXTURE_MIN_LOD;
-import static org.lwjgl.opengl.GL30.glBindBufferBase;
 import static org.lwjgl.opengl.GL33.*;
-import static org.lwjgl.opengl.GL33C.glSamplerParameteri;
 import static org.lwjgl.opengl.GL43.GL_SHADER_STORAGE_BUFFER;
-import static org.lwjgl.opengl.GL45.glBindTextureUnit;
+import static me.cortex.voxy.client.core.gl.VGL.glBindBufferBase;
+import static me.cortex.voxy.client.core.gl.VGL.glBindSampler;
+import static me.cortex.voxy.client.core.gl.VGL.glBindTextureUnit;
+import static me.cortex.voxy.client.core.gl.VGL.glDeleteSamplers;
+import static me.cortex.voxy.client.core.gl.VGL.glGenSamplers;
+import static me.cortex.voxy.client.core.gl.VGL.glSamplerParameteri;
 
 public class ModelStore {
     public static final int MODEL_SIZE = 64;

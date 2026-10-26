@@ -11,21 +11,23 @@ import org.lwjgl.system.MemoryStack;
 
 import java.util.List;
 
-import static org.lwjgl.opengl.ARBComputeShader.glDispatchCompute;
-import static org.lwjgl.opengl.ARBDirectStateAccess.glTextureParameteri;
-import static org.lwjgl.opengl.ARBShaderImageLoadStore.glBindImageTexture;
 import static org.lwjgl.opengl.GL11C.*;
 import static org.lwjgl.opengl.GL11C.GL_TEXTURE_WRAP_T;
 import static org.lwjgl.opengl.GL12C.GL_CLAMP_TO_EDGE;
 import static org.lwjgl.opengl.GL14C.GL_TEXTURE_COMPARE_MODE;
 import static org.lwjgl.opengl.GL15C.GL_READ_WRITE;
-import static org.lwjgl.opengl.GL20C.nglUniformMatrix4fv;
 import static org.lwjgl.opengl.GL30.GL_DEPTH_ATTACHMENT;
 import static org.lwjgl.opengl.GL30.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME;
 import static org.lwjgl.opengl.GL33C.*;
 import static org.lwjgl.opengl.GL45.glGetNamedFramebufferAttachmentParameteri;
-import static org.lwjgl.opengl.GL45C.glBindTextureUnit;
-import static org.lwjgl.opengl.GL45C.glCreateSamplers;
+import static me.cortex.voxy.client.core.gl.VGL.glBindImageTexture;
+import static me.cortex.voxy.client.core.gl.VGL.glBindSampler;
+import static me.cortex.voxy.client.core.gl.VGL.glBindTextureUnit;
+import static me.cortex.voxy.client.core.gl.VGL.glCreateSamplers;
+import static me.cortex.voxy.client.core.gl.VGL.glDeleteSamplers;
+import static me.cortex.voxy.client.core.gl.VGL.glDispatchCompute;
+import static me.cortex.voxy.client.core.gl.VGL.glSamplerParameteri;
+import static me.cortex.voxy.client.core.gl.VGL.nglUniformMatrix4fv;
 
 public class SSAO {
     public static enum SSAOMode {
@@ -156,7 +158,9 @@ public class SSAO {
         glBindSampler(2, this.depthSampler);
 
         if (this.isBetterSSAO) {
-            int depthTexture = glGetNamedFramebufferAttachmentParameteri(sourceFramebuffer, GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+            int depthTexture = me.cortex.voxy.client.core.gl.VGL.METAL
+                    ? me.cortex.voxy.client.core.gl.metal.MacInterop.lastImportedDepth()
+                    : glGetNamedFramebufferAttachmentParameteri(sourceFramebuffer, GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
             glBindTextureUnit(3, depthTexture);
             glBindSampler(3, this.depthSampler);
         }

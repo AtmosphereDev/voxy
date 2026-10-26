@@ -13,6 +13,8 @@ import static org.lwjgl.opengl.GL15.glDeleteQueries;
 import static org.lwjgl.opengl.GL15.glGenQueries;
 import static org.lwjgl.opengl.GL15C.*;
 import static org.lwjgl.opengl.GL33.glGetQueryObjecti64;
+import static me.cortex.voxy.client.core.gl.VGL.glFinish;
+import static me.cortex.voxy.client.core.gl.VGL.glMemoryBarrier;
 
 public class GPUTiming {
     public static GPUTiming INSTANCE = new GPUTiming();
@@ -35,6 +37,9 @@ public class GPUTiming {
     }
 
     public void setEnabled(boolean enable) {
+        if (me.cortex.voxy.client.core.gl.VGL.METAL) {
+            return;//Timestamp queries are not translated to Metal
+        }
         if (this.enabled != enable) {
             this.enabled = enable;
         }

@@ -62,7 +62,7 @@ public class RenderResourceReuse {
                 driverMemory = Capabilities.INSTANCE.getFreeDedicatedGpuMemory();
             }
 
-            glGetError();//Clear any errors
+            me.cortex.voxy.client.core.gl.VGL.glGetError();//Clear any errors
             if (!(Capabilities.INSTANCE.isNvidia&& ThreadUtils.isWindows&&Capabilities.INSTANCE.sparseBuffer)) {//This hack makes it so it doesnt crash on renderdoc
                 buffer = new GlBuffer(capacity, false);//Only do this if we are not on nvidia
                 //TODO: FIXME: TEST, see if the issue is that we are trying to zero the entire buffer, try only zeroing increments
@@ -70,7 +70,7 @@ public class RenderResourceReuse {
             } else {
                 Logger.info("Running on nvidia, using workaround sparse buffer allocation");
             }
-            int error = glGetError();
+            int error = me.cortex.voxy.client.core.gl.VGL.glGetError();
             if (error != GL_NO_ERROR || buffer == null) {
                 if ((buffer == null || error == GL_OUT_OF_MEMORY) && Capabilities.INSTANCE.sparseBuffer) {
                     if (buffer != null) {
@@ -79,7 +79,7 @@ public class RenderResourceReuse {
                     }
                     buffer = new GlBuffer(capacity, GL_SPARSE_STORAGE_BIT_ARB);
                     //buffer.zero();
-                    error = glGetError();
+                    error = me.cortex.voxy.client.core.gl.VGL.glGetError();
                     if (error != GL_NO_ERROR) {
                         buffer.free();
                         throw new IllegalStateException("Unable to allocate geometry buffer using workaround, got gl error " + error);
@@ -111,6 +111,14 @@ public class RenderResourceReuse {
         }
 
         geometryCapacity = Math.max(512*1024*1024, geometryCapacity);//min of 512 mb
+
+        if (me.cortex.voxy.client.core.gl.VGL.METAL) {
+            //Metal memory is (mostly) shared with the system, dont take more than a quarter of what the system recommends
+            long recommended = me.cortex.voxy.client.core.gl.metal.MetalNative.recommendedWorkingSet;
+            if (recommended > 0) {
+                geometryCapacity = Math.min(geometryCapacity, Math.max(512L*1024*1024, recommended/4));
+            }
+        }
 
         //Limit to available dedicated memory if possible
         if (Capabilities.INSTANCE.canQueryGpuMemory) {

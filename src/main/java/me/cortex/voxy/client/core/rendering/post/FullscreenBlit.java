@@ -10,9 +10,10 @@ import java.util.function.Function;
 
 import static org.lwjgl.opengl.GL11C.*;
 import static org.lwjgl.opengl.GL15C.GL_ELEMENT_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15C.glBindBuffer;
-import static org.lwjgl.opengl.GL30C.glBindVertexArray;
-import static org.lwjgl.opengl.GL45C.glCreateVertexArrays;
+import static me.cortex.voxy.client.core.gl.VGL.glBindBuffer;
+import static me.cortex.voxy.client.core.gl.VGL.glBindVertexArray;
+import static me.cortex.voxy.client.core.gl.VGL.glCreateVertexArrays;
+import static me.cortex.voxy.client.core.gl.VGL.glDrawElements;
 
 public class FullscreenBlit {
     private static final int EMPTY_VAO = glCreateVertexArrays();

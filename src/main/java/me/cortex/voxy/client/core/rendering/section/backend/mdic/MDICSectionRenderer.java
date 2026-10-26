@@ -28,19 +28,30 @@ import org.lwjgl.system.MemoryUtil;
 import java.util.List;
 
 import static org.lwjgl.opengl.ARBIndirectParameters.GL_PARAMETER_BUFFER_ARB;
-import static org.lwjgl.opengl.ARBIndirectParameters.glMultiDrawElementsIndirectCountARB;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.GL_ELEMENT_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15.glBindBuffer;
-import static org.lwjgl.opengl.GL30.glBindBufferBase;
-import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.opengl.GL31.GL_UNIFORM_BUFFER;
-import static org.lwjgl.opengl.GL33.glBindSampler;
 import static org.lwjgl.opengl.GL40C.GL_DRAW_INDIRECT_BUFFER;
-import static org.lwjgl.opengl.GL42.glMemoryBarrier;
 import static org.lwjgl.opengl.GL43.*;
-import static org.lwjgl.opengl.GL45.glBindTextureUnit;
 import static org.lwjgl.opengl.NVRepresentativeFragmentTest.GL_REPRESENTATIVE_FRAGMENT_TEST_NV;
+import static me.cortex.voxy.client.core.gl.VGL.glBindBuffer;
+import static me.cortex.voxy.client.core.gl.VGL.glBindBufferBase;
+import static me.cortex.voxy.client.core.gl.VGL.glBindSampler;
+import static me.cortex.voxy.client.core.gl.VGL.glBindTextureUnit;
+import static me.cortex.voxy.client.core.gl.VGL.glBindVertexArray;
+import static me.cortex.voxy.client.core.gl.VGL.glBlendFuncSeparate;
+import static me.cortex.voxy.client.core.gl.VGL.glColorMask;
+import static me.cortex.voxy.client.core.gl.VGL.glDepthFunc;
+import static me.cortex.voxy.client.core.gl.VGL.glDepthMask;
+import static me.cortex.voxy.client.core.gl.VGL.glDisable;
+import static me.cortex.voxy.client.core.gl.VGL.glDispatchCompute;
+import static me.cortex.voxy.client.core.gl.VGL.glDispatchComputeIndirect;
+import static me.cortex.voxy.client.core.gl.VGL.glDrawElementsIndirect;
+import static me.cortex.voxy.client.core.gl.VGL.glEnable;
+import static me.cortex.voxy.client.core.gl.VGL.glMemoryBarrier;
+import static me.cortex.voxy.client.core.gl.VGL.glMultiDrawElementsIndirectCountARB;
+import static me.cortex.voxy.client.core.gl.VGL.glPolygonMode;
+import static me.cortex.voxy.client.core.gl.VGL.glProvokingVertex;
 
 //Uses MDIC to render the sections
 public class MDICSectionRenderer extends AbstractSectionRenderer<MDICViewport, BasicSectionGeometryData> {

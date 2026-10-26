@@ -3,6 +3,9 @@ package me.cortex.voxy.client.core;
 import me.cortex.voxy.client.config.VoxyConfig;
 import me.cortex.voxy.client.core.gl.GlFramebuffer;
 import me.cortex.voxy.client.core.gl.GlTexture;
+import me.cortex.voxy.client.core.gl.VGL;
+import me.cortex.voxy.client.core.gl.metal.MacInterop;
+import me.cortex.voxy.client.core.gl.metal.MetalNative;
 import me.cortex.voxy.client.core.gl.shader.Shader;
 import me.cortex.voxy.client.core.gl.shader.ShaderType;
 import me.cortex.voxy.client.core.rendering.Viewport;
@@ -19,20 +22,24 @@ import org.lwjgl.system.MemoryStack;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 
-import static org.lwjgl.opengl.ARBComputeShader.glDispatchCompute;
-import static org.lwjgl.opengl.ARBShaderImageLoadStore.glBindImageTexture;
 import static org.lwjgl.opengl.GL30.GL_DEPTH_ATTACHMENT;
 import static org.lwjgl.opengl.GL30.GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME;
 import static org.lwjgl.opengl.GL30C.*;
 import static org.lwjgl.opengl.GL33C.*;
 import static org.lwjgl.opengl.GL43.GL_DEPTH_STENCIL_TEXTURE_MODE;
 import static org.lwjgl.opengl.GL45.glGetNamedFramebufferAttachmentParameteri;
-import static org.lwjgl.opengl.GL45C.glBindTextureUnit;
-import static org.lwjgl.opengl.GL45C.glTextureParameterf;
+import static me.cortex.voxy.client.core.gl.VGL.glBindFramebuffer;
+import static me.cortex.voxy.client.core.gl.VGL.glBindTextureUnit;
+import static me.cortex.voxy.client.core.gl.VGL.glBlendFuncSeparate;
+import static me.cortex.voxy.client.core.gl.VGL.glDisable;
+import static me.cortex.voxy.client.core.gl.VGL.glEnable;
+import static me.cortex.voxy.client.core.gl.VGL.glTextureParameterf;
+import static me.cortex.voxy.client.core.gl.VGL.glUniform4f;
 
 public class NormalRenderPipeline extends AbstractRenderPipeline {
     private GlTexture colourTex;
     private GlTexture colourSSAOTex;
+    private GlTexture depthShared;//macOS: the depth of voxy as an r32f texture OpenGL can read
     private final GlFramebuffer fbSSAO = new GlFramebuffer();
 
     private final boolean useEnvFog;
@@ -43,7 +50,8 @@ public class NormalRenderPipeline extends AbstractRenderPipeline {
     protected NormalRenderPipeline(RenderProperties properties, AsyncNodeManager nodeManager, NodeCleaner nodeCleaner, HierarchicalOcclusionTraverser traversal, BooleanSupplier frexSupplier) {
         super(properties, nodeManager, nodeCleaner, traversal, frexSupplier, false);
         this.useEnvFog = VoxyConfig.CONFIG.useEnvironmentalFog;
-        this.finalBlit = new FullscreenBlit(properties, "voxy:post/blit_texture_depth_cutout.frag",
+        //On macOS the final composite is done by OpenGL (MacInterop), the metal translated blit is not needed
+        this.finalBlit = VGL.METAL ? null : new FullscreenBlit(properties, "voxy:post/blit_texture_depth_cutout.frag",
                 a->a.defineIf("USE_ENV_FOG", this.useEnvFog).define("EMIT_COLOUR"));
 
 
@@ -56,11 +64,21 @@ public class NormalRenderPipeline extends AbstractRenderPipeline {
             if (this.colourTex != null) {
                 this.colourTex.free();
                 this.colourSSAOTex.free();
+                if (this.depthShared != null) {
+                    this.depthShared.free();
+                    this.depthShared = null;
+                }
             }
             this.fb.resize(viewport.width, viewport.height);
 
             this.colourTex = new GlTexture().store(GL_RGBA8, 1, viewport.width, viewport.height);
-            this.colourSSAOTex = new GlTexture().store(GL_RGBA8, 1, viewport.width, viewport.height);
+            if (VGL.METAL) {
+                //These two are shared with OpenGL for the final composite
+                this.colourSSAOTex = new GlTexture().storeShared(GL_RGBA8, viewport.width, viewport.height);
+                this.depthShared = new GlTexture().storeShared(GL_R32F, viewport.width, viewport.height);
+            } else {
+                this.colourSSAOTex = new GlTexture().store(GL_RGBA8, 1, viewport.width, viewport.height);
+            }
 
             this.fb.framebuffer.bind(GL_COLOR_ATTACHMENT0, this.colourTex).verify();
             this.fbSSAO.bind(this.fb.getDepthAttachmentType(), this.fb.getDepthTex()).bind(GL_COLOR_ATTACHMENT0, this.colourSSAOTex).verify();
@@ -87,6 +105,10 @@ public class NormalRenderPipeline extends AbstractRenderPipeline {
 
     @Override
     protected void finish(Viewport<?> viewport, int sourceFrameBuffer, int srcWidth, int srcHeight) {
+        if (VGL.METAL) {
+            this.finishMetal(viewport, sourceFrameBuffer, srcWidth, srcHeight);
+            return;
+        }
         this.finalBlit.bind();
 
         boolean fogCoversAllRendering = viewport.fogParameters.environmentalEnd()<Minecraft.getInstance().gameRenderer.getRenderDistance();
@@ -123,6 +145,40 @@ public class NormalRenderPipeline extends AbstractRenderPipeline {
         //glBlitNamedFramebuffer(this.fbSSAO.id, sourceFrameBuffer, 0,0, viewport.width, viewport.height, 0,0, viewport.width, viewport.height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
     }
 
+    //macOS: Metal has produced colour + depth, blend it into the framebuffer of minecraft with OpenGL
+    private void finishMetal(Viewport<?> viewport, int sourceFrameBuffer, int srcWidth, int srcHeight) {
+        boolean fogCoversAllRendering = viewport.fogParameters.environmentalEnd()<Minecraft.getInstance().gameRenderer.getRenderDistance();
+        if (fogCoversAllRendering) {
+            return;
+        }
+        float[] fogEnd = null;
+        float[] fogColour = null;
+        if (this.useEnvFog) {
+            fogEnd = new float[4];
+            fogColour = new float[4];
+            float start = viewport.fogParameters.environmentalStart();
+            float end = viewport.fogParameters.environmentalEnd();
+            if (Math.abs(end-start)>1) {
+                float invEndFogDelta = 1f / (end - start);
+                float endDistance = Math.max(Minecraft.getInstance().gameRenderer.getRenderDistance(), 20*16);
+                endDistance *= (float)Math.sqrt(3);
+                float startDelta = -start * invEndFogDelta;
+                fogEnd[0] = invEndFogDelta;
+                fogEnd[1] = startDelta;
+                fogEnd[2] = Math.clamp(endDistance*invEndFogDelta+startDelta, 0, 1);
+                fogColour[0] = viewport.fogParameters.red();
+                fogColour[1] = viewport.fogParameters.green();
+                fogColour[2] = viewport.fogParameters.blue();
+                fogColour[3] = viewport.fogParameters.alpha();
+            }
+        }
+        MetalNative.call(MetalNative.OP_TEX_DEPTH_TO_R32F, this.fb.getDepthTex().id, this.depthShared.id);
+        MacInterop.composite(this.colourSSAOTex, this.depthShared, sourceFrameBuffer, srcWidth, srcHeight,
+                new Matrix4f(viewport.MVP).invert(),
+                new Matrix4f(viewport.vanillaProjection).mul(viewport.modelView),
+                this.properties, fogEnd, fogColour, true);
+    }
+
     @Override
     public void setupAndBindOpaque(Viewport<?> viewport) {
         this.fb.bind();
@@ -135,7 +191,12 @@ public class NormalRenderPipeline extends AbstractRenderPipeline {
 
     @Override
     public void free() {
-        this.finalBlit.delete();
+        if (this.finalBlit != null) {
+            this.finalBlit.delete();
+        }
+        if (this.depthShared != null) {
+            this.depthShared.free();
+        }
         this.ssao.free();
         this.fbSSAO.free();
         if (this.colourTex != null) {

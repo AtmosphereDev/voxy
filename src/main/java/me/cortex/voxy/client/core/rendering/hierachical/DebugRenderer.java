@@ -16,13 +16,18 @@ import org.lwjgl.system.MemoryUtil;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
 import static org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE;
 import static org.lwjgl.opengl.GL15.GL_ELEMENT_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15C.glBindBuffer;
 import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.opengl.GL31.GL_UNIFORM_BUFFER;
 import static org.lwjgl.opengl.GL40.GL_DRAW_INDIRECT_BUFFER;
-import static org.lwjgl.opengl.GL40.glDrawElementsIndirect;
-import static org.lwjgl.opengl.GL42.glMemoryBarrier;
 import static org.lwjgl.opengl.GL43.*;
+import static me.cortex.voxy.client.core.gl.VGL.glBindBuffer;
+import static me.cortex.voxy.client.core.gl.VGL.glBindBufferBase;
+import static me.cortex.voxy.client.core.gl.VGL.glBindVertexArray;
+import static me.cortex.voxy.client.core.gl.VGL.glDispatchCompute;
+import static me.cortex.voxy.client.core.gl.VGL.glDrawElementsIndirect;
+import static me.cortex.voxy.client.core.gl.VGL.glEnable;
+import static me.cortex.voxy.client.core.gl.VGL.glMemoryBarrier;
+import me.cortex.voxy.client.core.gl.VGL;
 
 public class DebugRenderer {
     private final Shader debugShader = Shader.make()
@@ -69,7 +74,7 @@ public class DebugRenderer {
         this.debugShader.bind();
         glBindVertexArray(GlVertexArray.STATIC_VAO);
         glBindBuffer(GL_DRAW_INDIRECT_BUFFER, this.drawBuffer.id);
-        GL15.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, SharedIndexBuffer.INSTANCE_BYTE.id());
+        VGL.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, SharedIndexBuffer.INSTANCE_BYTE.id());
         glBindBufferBase(GL_UNIFORM_BUFFER, 0, this.uniformBuffer.id);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, nodeData.id);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, nodeList.id);

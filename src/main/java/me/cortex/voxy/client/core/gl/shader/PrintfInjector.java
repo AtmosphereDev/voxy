@@ -9,13 +9,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 
-import static org.lwjgl.opengl.ARBDirectStateAccess.nglClearNamedBufferData;
 import static org.lwjgl.opengl.GL11.GL_UNSIGNED_INT;
 import static org.lwjgl.opengl.GL30.GL_R32UI;
-import static org.lwjgl.opengl.GL30.glBindBufferBase;
 import static org.lwjgl.opengl.GL30C.GL_RED_INTEGER;
 import static org.lwjgl.opengl.GL43.GL_SHADER_STORAGE_BUFFER;
-import static org.lwjgl.opengl.GL45.nglClearNamedBufferSubData;
+import static me.cortex.voxy.client.core.gl.VGL.glBindBufferBase;
+import static me.cortex.voxy.client.core.gl.VGL.nglClearNamedBufferData;
+import static me.cortex.voxy.client.core.gl.VGL.nglClearNamedBufferSubData;
 
 public class PrintfInjector implements IShaderProcessor {
     private final GlBuffer textBuffer;

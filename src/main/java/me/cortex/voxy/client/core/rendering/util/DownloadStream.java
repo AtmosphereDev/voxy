@@ -14,12 +14,12 @@ import java.util.Deque;
 import java.util.function.Consumer;
 
 import static me.cortex.voxy.common.util.AllocationArena.SIZE_LIMIT;
-import static org.lwjgl.opengl.GL11.glFinish;
 import static org.lwjgl.opengl.GL30C.GL_MAP_READ_BIT;
 import static org.lwjgl.opengl.GL42.GL_BUFFER_UPDATE_BARRIER_BIT;
-import static org.lwjgl.opengl.GL42.glMemoryBarrier;
 import static org.lwjgl.opengl.GL44.GL_CLIENT_MAPPED_BUFFER_BARRIER_BIT;
-import static org.lwjgl.opengl.GL45.glCopyNamedBufferSubData;
+import static me.cortex.voxy.client.core.gl.VGL.glCopyNamedBufferSubData;
+import static me.cortex.voxy.client.core.gl.VGL.glFinish;
+import static me.cortex.voxy.client.core.gl.VGL.glMemoryBarrier;
 
 public class DownloadStream {
     public interface DownloadResultConsumer {

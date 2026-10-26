@@ -11,8 +11,8 @@ import java.util.ArrayList;
 import java.util.Deque;
 
 import static org.lwjgl.opengl.ARBMapBufferRange.GL_MAP_READ_BIT;
-import static org.lwjgl.opengl.GL11.glFinish;
 import static org.lwjgl.opengl.GL44.GL_MAP_COHERENT_BIT;
+import static me.cortex.voxy.client.core.gl.VGL.glFinish;
 
 //Special download stream which allows access to the download buffer directly
 public class RawDownloadStream {

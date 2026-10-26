@@ -8,7 +8,9 @@ import me.cortex.voxy.common.util.ThreadUtils;
 import static org.lwjgl.opengl.ARBSparseBuffer.*;
 import static org.lwjgl.opengl.GL11C.*;
 import static org.lwjgl.opengl.GL15C.GL_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15C.glBindBuffer;
+import static me.cortex.voxy.client.core.gl.VGL.glBindBuffer;
+import static me.cortex.voxy.client.core.gl.VGL.glFinish;
+import static me.cortex.voxy.client.core.gl.VGL.glGetError;
 
 public class BasicSectionGeometryData implements IGeometryData {
     public static final int SECTION_METADATA_SIZE = 32;

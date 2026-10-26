@@ -19,15 +19,18 @@ import org.joml.Vector3f;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryUtil;
 
-import static org.lwjgl.opengl.ARBDirectStateAccess.glCopyNamedBufferSubData;
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
 import static org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE;
 import static org.lwjgl.opengl.GL15.GL_ELEMENT_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15.glBindBuffer;
-import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.opengl.GL30C.*;
-import static org.lwjgl.opengl.GL31.glDrawElementsInstanced;
-import static org.lwjgl.opengl.GL42.glDrawElementsInstancedBaseInstance;
+import static me.cortex.voxy.client.core.gl.VGL.glBindBuffer;
+import static me.cortex.voxy.client.core.gl.VGL.glBindVertexArray;
+import static me.cortex.voxy.client.core.gl.VGL.glCopyNamedBufferSubData;
+import static me.cortex.voxy.client.core.gl.VGL.glDepthFunc;
+import static me.cortex.voxy.client.core.gl.VGL.glDrawElementsInstanced;
+import static me.cortex.voxy.client.core.gl.VGL.glDrawElementsInstancedBaseInstance;
+import static me.cortex.voxy.client.core.gl.VGL.glEnable;
+import static me.cortex.voxy.client.core.gl.VGL.glFrontFace;
 
 //This is a render subsystem, its very simple in what it does
 // it renders an AABB around loaded chunks, thats it

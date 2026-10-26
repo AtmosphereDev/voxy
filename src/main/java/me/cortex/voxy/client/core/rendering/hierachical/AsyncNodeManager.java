@@ -33,11 +33,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.StampedLock;
 
-import static org.lwjgl.opengl.ARBUniformBufferObject.glBindBufferBase;
-import static org.lwjgl.opengl.GL30C.glUniform1ui;
 import static org.lwjgl.opengl.GL42C.GL_UNIFORM_BARRIER_BIT;
-import static org.lwjgl.opengl.GL42C.glMemoryBarrier;
 import static org.lwjgl.opengl.GL43C.*;
+import static me.cortex.voxy.client.core.gl.VGL.glBindBufferBase;
+import static me.cortex.voxy.client.core.gl.VGL.glBindBufferRange;
+import static me.cortex.voxy.client.core.gl.VGL.glDispatchCompute;
+import static me.cortex.voxy.client.core.gl.VGL.glMemoryBarrier;
+import static me.cortex.voxy.client.core.gl.VGL.glUniform1ui;
 
 //TODO: create an "async upload stream", that is, the upload stream is a raw mapped buffer pointer that can be written to
 // which is then synced to the gpu on "render thread sync",

@@ -27,9 +27,22 @@ import static org.lwjgl.opengl.GL12.GL_UNPACK_IMAGE_HEIGHT;
 import static org.lwjgl.opengl.GL12.GL_UNPACK_SKIP_IMAGES;
 import static org.lwjgl.opengl.GL30.*;
 import static org.lwjgl.opengl.GL30C.GL_RED_INTEGER;
-import static org.lwjgl.opengl.GL42.glMemoryBarrier;
 import static org.lwjgl.opengl.GL43.GL_SHADER_STORAGE_BARRIER_BIT;
 import static org.lwjgl.opengl.GL45.*;
+import static me.cortex.voxy.client.core.gl.VGL.glBindBuffer;
+import static me.cortex.voxy.client.core.gl.VGL.glBindBufferBase;
+import static me.cortex.voxy.client.core.gl.VGL.glBindSampler;
+import static me.cortex.voxy.client.core.gl.VGL.glBindTextureUnit;
+import static me.cortex.voxy.client.core.gl.VGL.glDeleteSamplers;
+import static me.cortex.voxy.client.core.gl.VGL.glDispatchCompute;
+import static me.cortex.voxy.client.core.gl.VGL.glDispatchComputeIndirect;
+import static me.cortex.voxy.client.core.gl.VGL.glGenSamplers;
+import static me.cortex.voxy.client.core.gl.VGL.glMemoryBarrier;
+import static me.cortex.voxy.client.core.gl.VGL.glSamplerParameteri;
+import static me.cortex.voxy.client.core.gl.VGL.glUniform1ui;
+import static me.cortex.voxy.client.core.gl.VGL.nglClearNamedBufferSubData;
+import static me.cortex.voxy.client.core.gl.VGL.glClearNamedBufferData;
+import static me.cortex.voxy.client.core.gl.VGL.glClearNamedBufferSubData;
 
 // TODO: swap to persistent gpu threads instead of dispatching MAX_ITERATIONS of compute layers
 public class HierarchicalOcclusionTraverser {

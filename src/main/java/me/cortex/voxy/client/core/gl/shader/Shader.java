@@ -2,6 +2,8 @@ package me.cortex.voxy.client.core.gl.shader;
 
 import me.cortex.voxy.client.core.gl.Capabilities;
 import me.cortex.voxy.client.core.gl.GlDebug;
+import me.cortex.voxy.client.core.gl.VGL;
+import me.cortex.voxy.client.core.gl.metal.MetalNative;
 import me.cortex.voxy.common.Logger;
 import me.cortex.voxy.common.util.ThreadUtils;
 import me.cortex.voxy.common.util.TrackedObject;
@@ -17,7 +19,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.lwjgl.opengl.GL20.glDeleteProgram;
-import static org.lwjgl.opengl.GL20.glUseProgram;
+import static me.cortex.voxy.client.core.gl.VGL.glUseProgram;
 
 public class Shader extends TrackedObject {
     private final int id;
@@ -35,7 +37,11 @@ public class Shader extends TrackedObject {
 
     public void free() {
         super.free0();
-        glDeleteProgram(this.id);
+        if (VGL.METAL) {
+            MetalNative.call(MetalNative.OP_PROG_DELETE, this.id);
+        } else {
+            glDeleteProgram(this.id);
+        }
     }
 
 
@@ -143,7 +149,71 @@ public class Shader extends TrackedObject {
         }
 
 
+        //Adds the defines & replacements to a shader source
+        private String finalizeSource(String src, String defs) {
+            //Inject defines
+            src = src.substring(0, src.indexOf('\n')+1) +
+                    defs
+                    + src.substring(src.indexOf('\n')+1);
+
+            for (var replacement : this.replacements.entrySet()) {
+                src = src.replace(replacement.getKey(), replacement.getValue());
+            }
+            return src;
+        }
+
+        //Metal: the glsl is cross compiled (glsl -> spirv -> msl) by the native library
+        private int compileToProgramMetal() {
+            String defs = this.defines.entrySet().stream().map(a->"#define " + a.getKey() + " " + a.getValue() + "\n").collect(Collectors.joining());
+            int count = this.sources.size();
+            long stages = MemoryUtil.nmemAllocChecked(count * 24L);
+            long log = MemoryUtil.nmemCallocChecked(1, 1<<16);
+            var buffers = new ArrayList<java.nio.ByteBuffer>();
+            String firstSource = null;
+            try {
+                int i = 0;
+                for (var entry : this.sources.entrySet()) {
+                    String src = this.finalizeSource(entry.getValue(), defs);
+                    if (firstSource == null) firstSource = src;
+                    int stage = switch (entry.getKey()) {
+                        case VERTEX -> 0;
+                        case FRAGMENT -> 1;
+                        case COMPUTE -> 2;
+                        default -> throw new IllegalStateException("Shader stage " + entry.getKey() + " is not supported on Metal");
+                    };
+                    var buf = MemoryUtil.memUTF8(src, false);
+                    buffers.add(buf);
+                    MemoryUtil.memPutLong(stages + i * 24L, stage);
+                    MemoryUtil.memPutLong(stages + i * 24L + 8, MemoryUtil.memAddress(buf));
+                    MemoryUtil.memPutLong(stages + i * 24L + 16, buf.remaining());
+                    i++;
+                }
+                int program = (int) MetalNative.call(MetalNative.OP_PROG_CREATE, count, stages, log, 1<<16);
+                String logStr = MemoryUtil.memUTF8(log);
+                if (program == 0) {
+                    Logger.error(logStr);
+                    try {
+                        Files.writeString(Path.of("SHADER_DUMP.txt"), firstSource + "\n\n----\n" + logStr);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    throw new RuntimeException("Metal shader translation failed, see log for details, dumped shader");
+                }
+                if (!logStr.isEmpty()) {
+                    Logger.warn(logStr);
+                }
+                return program;
+            } finally {
+                MemoryUtil.nmemFree(stages);
+                MemoryUtil.nmemFree(log);
+                buffers.forEach(MemoryUtil::memFree);
+            }
+        }
+
         private int compileToProgram() {
+            if (VGL.METAL) {
+                return this.compileToProgramMetal();
+            }
             int program = GL20C.glCreateProgram();
             int[] shaders = new int[this.sources.size()];
             {

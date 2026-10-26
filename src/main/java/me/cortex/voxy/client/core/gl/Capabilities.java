@@ -1,5 +1,6 @@
 package me.cortex.voxy.client.core.gl;
 
+import me.cortex.voxy.client.core.gl.metal.MetalNative;
 import me.cortex.voxy.client.core.gl.shader.ShaderType;
 import me.cortex.voxy.common.Logger;
 import org.lwjgl.opengl.GL;
@@ -51,16 +52,18 @@ public class Capabilities {
     public final boolean hasBrokenDepthSampler;
 
     public Capabilities() {
-        var cap = GL.getCapabilities();
-        this.sparseBuffer = cap.GL_ARB_sparse_buffer;
-        this.compute = cap.glDispatchComputeIndirect != 0;
-        this.indirectParameters = cap.glMultiDrawElementsIndirectCountARB != 0;
-        this.repFragTest = cap.GL_NV_representative_fragment_test;
-        this.meshShaders = cap.GL_NV_mesh_shader;
-        this.canQueryGpuMemory = cap.GL_NVX_gpu_memory_info;
+        //On macOS everything Voxy needs is provided by the Metal backend (the real OpenGL context is only 4.1)
+        final boolean metal = VGL.METAL;
+        var cap = metal ? null : GL.getCapabilities();
+        this.sparseBuffer = !metal && cap.GL_ARB_sparse_buffer;
+        this.compute = metal || cap.glDispatchComputeIndirect != 0;
+        this.indirectParameters = metal || cap.glMultiDrawElementsIndirectCountARB != 0;
+        this.repFragTest = !metal && cap.GL_NV_representative_fragment_test;
+        this.meshShaders = !metal && cap.GL_NV_mesh_shader;
+        this.canQueryGpuMemory = !metal && cap.GL_NVX_gpu_memory_info;
         //this.INT64_t = cap.GL_ARB_gpu_shader_int64 || cap.GL_AMD_gpu_shader_int64;
         //The only reliable way to test for int64 support is to try compile a shader
-        this.INT64_t = testShaderCompilesOk(ShaderType.COMPUTE, """
+        this.INT64_t = metal || testShaderCompilesOk(ShaderType.COMPUTE, """
                 #version 430
                 #extension GL_ARB_gpu_shader_int64 : require
                 layout(local_size_x=32) in;
@@ -68,7 +71,10 @@ public class Capabilities {
                     uint64_t a = 1234;
                 }
                 """);
-        if (cap.GL_KHR_shader_subgroup) {
+        if (metal) {
+            //The subgroup shaders assume a simd width of 32, which holds for Apple silicon
+            this.subgroup = MetalNative.supportsSubgroup;
+        } else if (cap.GL_KHR_shader_subgroup) {
             this.subgroup = testShaderCompilesOk(ShaderType.COMPUTE, """
                 #version 430
                 #extension GL_KHR_shader_subgroup_basic : require
@@ -82,8 +88,8 @@ public class Capabilities {
             this.subgroup = false;
         }
 
-        this.ssboMaxSize = glGetInteger64(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
-        this.ssboBindingAlignment = glGetInteger(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT);
+        this.ssboMaxSize = metal ? MetalNative.maxBufferLength : glGetInteger64(GL_MAX_SHADER_STORAGE_BLOCK_SIZE);
+        this.ssboBindingAlignment = metal ? 256 : glGetInteger(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT);
 
         this.isMesa = glGetString(GL_VERSION).toLowerCase(Locale.ROOT).contains("mesa");
         var vendor = glGetString(GL_VENDOR).toLowerCase(Locale.ROOT);
@@ -99,9 +105,9 @@ public class Capabilities {
             this.totalDynamicMemory = -1;
         }
 
-        this.nvBarryCoords = cap.GL_NV_fragment_shader_barycentric;
+        this.nvBarryCoords = !metal && cap.GL_NV_fragment_shader_barycentric;
 
-        if (this.compute&&this.isAmd) {
+        if (!metal && this.compute&&this.isAmd) {
             this.hasBrokenDepthSampler = testDepthSampler();
             if (this.hasBrokenDepthSampler) {
                 throw new IllegalStateException("it bork, amd is bork");

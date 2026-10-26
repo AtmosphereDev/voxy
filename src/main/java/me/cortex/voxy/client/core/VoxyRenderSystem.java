@@ -8,6 +8,7 @@ import me.cortex.voxy.client.VoxyClient;
 import me.cortex.voxy.client.config.VoxyConfig;
 import me.cortex.voxy.client.core.gl.Capabilities;
 import me.cortex.voxy.client.core.gl.GlBuffer;
+import me.cortex.voxy.client.core.gl.VGL;
 import me.cortex.voxy.client.core.gl.GlTexture;
 import me.cortex.voxy.client.core.model.ModelBakerySubsystem;
 import me.cortex.voxy.client.core.model.ModelStore;
@@ -93,7 +94,7 @@ public class VoxyRenderSystem {
         //Fking HATE EVERYTHING AAAAAAAAAAAAAAAA
         int[] oldBufferBindings = new int[10];
         for (int i = 0; i < oldBufferBindings.length; i++) {
-            oldBufferBindings[i] = glGetIntegeri(GL_SHADER_STORAGE_BUFFER_BINDING, i);
+            if (!VGL.METAL) oldBufferBindings[i] = glGetIntegeri(GL_SHADER_STORAGE_BUFFER_BINDING, i);
         }
 
         try {
@@ -162,7 +163,7 @@ public class VoxyRenderSystem {
         }
 
         for (int i = 0; i < oldBufferBindings.length; i++) {
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, oldBufferBindings[i]);
+            if (!VGL.METAL) glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, oldBufferBindings[i]);
         }
 
         for (int i = 0; i < 12; i++) {
@@ -241,7 +242,7 @@ public class VoxyRenderSystem {
         //TODO: optimize
         int[] oldBufferBindings = new int[10];
         for (int i = 0; i < oldBufferBindings.length; i++) {
-            oldBufferBindings[i] = glGetIntegeri(GL_SHADER_STORAGE_BUFFER_BINDING, i);
+            if (!VGL.METAL) oldBufferBindings[i] = glGetIntegeri(GL_SHADER_STORAGE_BUFFER_BINDING, i);
         }
 
 
@@ -251,7 +252,7 @@ public class VoxyRenderSystem {
         int[] dims = new int[4];
         glGetIntegerv(GL_VIEWPORT, dims);
 
-        glViewport(0,0, viewport.width, viewport.height);
+        if (VGL.METAL) VGL.glViewport(0,0, viewport.width, viewport.height); else glViewport(0,0, viewport.width, viewport.height);
 
         //var target = DefaultTerrainRenderPasses.CUTOUT.getTarget();
         //boundFB = ((net.minecraft.client.texture.GlTexture) target.getColorAttachment()).getOrCreateFramebuffer(((GlBackend) RenderSystem.getDevice()).getFramebufferManager(), target.getDepthAttachment());
@@ -321,7 +322,7 @@ public class VoxyRenderSystem {
             //TODO: should/needto actually restore all of these, not just clear them
             //Clear all the bindings
             for (int i = 0; i < oldBufferBindings.length; i++) {
-                glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, oldBufferBindings[i]);
+                if (!VGL.METAL) glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, oldBufferBindings[i]);
             }
 
             //((SodiumShader) Iris.getPipelineManager().getPipelineNullable().getSodiumPrograms().getProgram(DefaultTerrainRenderPasses.CUTOUT).getInterface()).setupState(DefaultTerrainRenderPasses.CUTOUT, fogParameters);

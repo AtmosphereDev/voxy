@@ -12,13 +12,26 @@ import static org.lwjgl.opengl.ARBDirectStateAccess.*;
 import static org.lwjgl.opengl.ARBShaderImageLoadStore.GL_TEXTURE_FETCH_BARRIER_BIT;
 import static org.lwjgl.opengl.GL11C.*;
 import static org.lwjgl.opengl.GL30C.*;
-import static org.lwjgl.opengl.GL33.glBindSampler;
-import static org.lwjgl.opengl.GL33.glGenSamplers;
-import static org.lwjgl.opengl.GL33C.glDeleteSamplers;
-import static org.lwjgl.opengl.GL33C.glSamplerParameteri;
 import static org.lwjgl.opengl.GL42C.GL_FRAMEBUFFER_BARRIER_BIT;
-import static org.lwjgl.opengl.GL42C.glMemoryBarrier;
-import static org.lwjgl.opengl.GL45C.glTextureBarrier;
+import static me.cortex.voxy.client.core.gl.VGL.glBindFramebuffer;
+import static me.cortex.voxy.client.core.gl.VGL.glBindSampler;
+import static me.cortex.voxy.client.core.gl.VGL.glBindTextureUnit;
+import static me.cortex.voxy.client.core.gl.VGL.glBindVertexArray;
+import static me.cortex.voxy.client.core.gl.VGL.glDeleteSamplers;
+import static me.cortex.voxy.client.core.gl.VGL.glDepthFunc;
+import static me.cortex.voxy.client.core.gl.VGL.glDepthMask;
+import static me.cortex.voxy.client.core.gl.VGL.glDisable;
+import static me.cortex.voxy.client.core.gl.VGL.glDrawArrays;
+import static me.cortex.voxy.client.core.gl.VGL.glEnable;
+import static me.cortex.voxy.client.core.gl.VGL.glGenSamplers;
+import static me.cortex.voxy.client.core.gl.VGL.glMemoryBarrier;
+import static me.cortex.voxy.client.core.gl.VGL.glNamedFramebufferDrawBuffer;
+import static me.cortex.voxy.client.core.gl.VGL.glSamplerParameteri;
+import static me.cortex.voxy.client.core.gl.VGL.glTextureBarrier;
+import static me.cortex.voxy.client.core.gl.VGL.glTextureParameteri;
+import static me.cortex.voxy.client.core.gl.VGL.glUniform1i;
+import static me.cortex.voxy.client.core.gl.VGL.glViewport;
+import me.cortex.voxy.client.core.gl.VGL;
 
 public class HiZBuffer {
     private final Shader hiz;
@@ -81,7 +94,7 @@ public class HiZBuffer {
             this.alloc(Integer.highestOneBit(width), Integer.highestOneBit(height));
         }
         glBindVertexArray(GlVertexArray.STATIC_VAO);
-        int boundFB = GL11.glGetInteger(GL_DRAW_FRAMEBUFFER_BINDING);
+        int boundFB = VGL.glGetInteger(GL_DRAW_FRAMEBUFFER_BINDING);
         this.hiz.bind();
         glBindFramebuffer(GL_FRAMEBUFFER, this.fb.id);
 

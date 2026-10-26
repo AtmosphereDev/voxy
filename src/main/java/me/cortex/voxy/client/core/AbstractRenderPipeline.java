@@ -27,22 +27,30 @@ import static org.lwjgl.opengl.GL11C.GL_EQUAL;
 import static org.lwjgl.opengl.GL11C.GL_KEEP;
 import static org.lwjgl.opengl.GL11C.GL_REPLACE;
 import static org.lwjgl.opengl.GL11C.GL_STENCIL_TEST;
-import static org.lwjgl.opengl.GL11C.glColorMask;
-import static org.lwjgl.opengl.GL11C.glDisable;
-import static org.lwjgl.opengl.GL11C.glEnable;
-import static org.lwjgl.opengl.GL11C.glStencilFunc;
-import static org.lwjgl.opengl.GL11C.glStencilMask;
-import static org.lwjgl.opengl.GL11C.glStencilOp;
 import static org.lwjgl.opengl.GL30C.GL_DEPTH24_STENCIL8;
 import static org.lwjgl.opengl.GL30C.GL_FRAMEBUFFER;
-import static org.lwjgl.opengl.GL30C.glBindFramebuffer;
 import static org.lwjgl.opengl.GL42.GL_LEQUAL;
 import static org.lwjgl.opengl.GL42.GL_NOTEQUAL;
-import static org.lwjgl.opengl.GL42.glDepthFunc;
 import static org.lwjgl.opengl.GL42.*;
-import static org.lwjgl.opengl.GL45.glClearNamedFramebufferfi;
 import static org.lwjgl.opengl.GL45.glGetNamedFramebufferAttachmentParameteri;
-import static org.lwjgl.opengl.GL45C.glBindTextureUnit;
+import static me.cortex.voxy.client.core.gl.VGL.glBindFramebuffer;
+import static me.cortex.voxy.client.core.gl.VGL.glBindSampler;
+import static me.cortex.voxy.client.core.gl.VGL.glBindTextureUnit;
+import static me.cortex.voxy.client.core.gl.VGL.glClearNamedFramebufferfi;
+import static me.cortex.voxy.client.core.gl.VGL.glColorMask;
+import static me.cortex.voxy.client.core.gl.VGL.glDepthFunc;
+import static me.cortex.voxy.client.core.gl.VGL.glDepthMask;
+import static me.cortex.voxy.client.core.gl.VGL.glDisable;
+import static me.cortex.voxy.client.core.gl.VGL.glEnable;
+import static me.cortex.voxy.client.core.gl.VGL.glFlush;
+import static me.cortex.voxy.client.core.gl.VGL.glGenSamplers;
+import static me.cortex.voxy.client.core.gl.VGL.glMemoryBarrier;
+import static me.cortex.voxy.client.core.gl.VGL.glSamplerParameteri;
+import static me.cortex.voxy.client.core.gl.VGL.glStencilFunc;
+import static me.cortex.voxy.client.core.gl.VGL.glStencilMask;
+import static me.cortex.voxy.client.core.gl.VGL.glStencilOp;
+import static me.cortex.voxy.client.core.gl.VGL.glUniform2f;
+import static me.cortex.voxy.client.core.gl.VGL.nglUniformMatrix4fv;
 
 public abstract class AbstractRenderPipeline extends TrackedObject {
     public final RenderProperties properties;
@@ -98,6 +106,9 @@ public abstract class AbstractRenderPipeline extends TrackedObject {
     }
 
     public void runPipeline(Viewport<?> viewport, int sourceFrameBuffer, int srcWidth, int srcHeight) {
+        if (me.cortex.voxy.client.core.gl.VGL.METAL) {
+            me.cortex.voxy.client.core.gl.metal.MacInterop.beginFrame();
+        }
         int depthTexture = this.setup(viewport, sourceFrameBuffer, srcWidth, srcHeight);
 
         var rs = ((AbstractSectionRenderer)this.sectionRenderer);
@@ -150,7 +161,10 @@ public abstract class AbstractRenderPipeline extends TrackedObject {
 
 
         this.depthStencilSetup.bind();
-        int depthTexture = glGetNamedFramebufferAttachmentParameteri(sourceFrameBuffer, GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
+        //On macOS the depth buffer of minecraft lives in OpenGL, it is copied to a Metal texture
+        int depthTexture = me.cortex.voxy.client.core.gl.VGL.METAL
+                ? me.cortex.voxy.client.core.gl.metal.MacInterop.importDepth(sourceFrameBuffer, srcWidth, srcHeight)
+                : glGetNamedFramebufferAttachmentParameteri(sourceFrameBuffer, GL_DEPTH_ATTACHMENT, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME);
         glBindTextureUnit(0, depthTexture);
         glBindSampler(0, DEPTH_SAMPLER);
         glUniform2f(1,((float)width)/srcWidth, ((float)height)/srcHeight);

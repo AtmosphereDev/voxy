@@ -5,3 +5,6 @@
 /run/
 /out/
 /logs/
+/native/dist/
+/native/voxymtl/build/
+/native/voxymtl/.xmake/

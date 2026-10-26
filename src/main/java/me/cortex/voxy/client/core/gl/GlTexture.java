@@ -1,5 +1,6 @@
 package me.cortex.voxy.client.core.gl;
 
+import me.cortex.voxy.client.core.gl.metal.MetalNative;
 import me.cortex.voxy.common.util.TrackedObject;
 
 import static org.lwjgl.opengl.GL11.GL_RGBA8;
@@ -8,7 +9,10 @@ import static org.lwjgl.opengl.GL30.GL_DEPTH24_STENCIL8;
 import static org.lwjgl.opengl.GL45C.*;
 
 public class GlTexture extends TrackedObject {
-    public final int id;
+    //On Metal the id is only known once the storage has been allocated (store)
+    public int id;
+    //The OpenGL rectangle texture name sharing the memory of this (IOSurface backed) texture, 0 if not shared
+    public int glShareId;
     private final int type;
     private int format;
     private int width;
@@ -24,13 +28,15 @@ public class GlTexture extends TrackedObject {
     }
 
     public GlTexture(int type) {
-        this.id = glCreateTextures(type);
+        this.id = VGL.METAL ? 0 : glCreateTextures(type);
         this.type = type;
         COUNT++;
     }
 
     private GlTexture(int type, boolean useGenTypes) {
-        if (useGenTypes) {
+        if (VGL.METAL) {
+            this.id = 0;
+        } else if (useGenTypes) {
             this.id = glGenTextures();
         } else {
             this.id = glCreateTextures(type);
@@ -47,7 +53,14 @@ public class GlTexture extends TrackedObject {
 
         this.format = format;
         if (this.type == GL_TEXTURE_2D) {
-            glTextureStorage2D(this.id, levels, format, width, height);
+            if (VGL.METAL) {
+                this.id = (int) MetalNative.call(MetalNative.OP_TEX_CREATE, width, height, levels, format, 0, 0);
+                if (this.id == 0) {
+                    throw new IllegalStateException("Failed to create Metal texture of format " + format);
+                }
+            } else {
+                glTextureStorage2D(this.id, levels, format, width, height);
+            }
             this.width = width;
             this.height = height;
             this.levels = levels;
@@ -58,10 +71,42 @@ public class GlTexture extends TrackedObject {
         return this;
     }
 
+    /**
+     * Metal only: allocates the storage as an IOSurface backed texture that OpenGL can sample through glShareId
+     * (a GL_TEXTURE_RECTANGLE). Only GL_RGBA8 and GL_R32F are supported.
+     */
+    public GlTexture storeShared(int format, int width, int height) {
+        if (!VGL.METAL) throw new IllegalStateException("Shared textures only exist on Metal");
+        if (this.hasAllocated) {
+            throw new IllegalStateException("Texture already allocated");
+        }
+        this.hasAllocated = true;
+        this.format = format;
+        long scratch = org.lwjgl.system.MemoryUtil.nmemCallocChecked(1, 8);
+        try {
+            this.id = (int) MetalNative.call(MetalNative.OP_TEX_CREATE, width, height, 1, format, 1, scratch);
+            if (this.id == 0) {
+                throw new IllegalStateException("Failed to create shared Metal texture");
+            }
+            this.glShareId = org.lwjgl.system.MemoryUtil.memGetInt(scratch);
+        } finally {
+            org.lwjgl.system.MemoryUtil.nmemFree(scratch);
+        }
+        this.width = width;
+        this.height = height;
+        this.levels = 1;
+        ESTIMATED_TOTAL_SIZE += this.getEstimatedSize();
+        return this;
+    }
+
     public GlTexture createView() {
         this.assertAllocated();
         var view = new GlTexture(this.type, true);
-        glTextureView(view.id, this.type, this.id, this.format, 0, 1, 0, 1);
+        if (VGL.METAL) {
+            view.id = (int) MetalNative.call(MetalNative.OP_TEX_VIEW, this.id, this.format, 0, 1);
+        } else {
+            glTextureView(view.id, this.type, this.id, this.format, 0, 1, 0, 1);
+        }
         return view;
     }
 
@@ -73,7 +118,11 @@ public class GlTexture extends TrackedObject {
         COUNT--;
         this.hasAllocated = false;
         super.free0();
-        glDeleteTextures(this.id);
+        if (VGL.METAL) {
+            if (this.glShareId != 0 || this.id != 0) MetalNative.call(MetalNative.OP_TEX_DELETE, this.id);
+        } else {
+            glDeleteTextures(this.id);
+        }
     }
 
     public GlTexture name(String name) {
@@ -149,7 +198,11 @@ public class GlTexture extends TrackedObject {
             default -> throw new IllegalStateException("Unknown format");
         };
         for (int lvl = 0; lvl < this.levels; lvl++) {
-            nglClearTexImage(this.id, lvl, this.getPixelTransferFormat(), type, 0);
+            if (VGL.METAL) {
+                MetalNative.call(MetalNative.OP_TEX_CLEAR, this.id, lvl, this.getPixelTransferFormat(), type, 0);
+            } else {
+                nglClearTexImage(this.id, lvl, this.getPixelTransferFormat(), type, 0);
+            }
         }
         return this;
     }

@@ -1,5 +1,6 @@
 package me.cortex.voxy.client.core.gl;
 
+import me.cortex.voxy.client.core.gl.metal.MetalNative;
 import me.cortex.voxy.common.util.TrackedObject;
 import org.lwjgl.system.MemoryUtil;
 
@@ -10,13 +11,16 @@ public class GlFence extends TrackedObject {
     private boolean signaled;
 
     public GlFence() {
-        this.fence = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+        //On Metal this commits the current command buffer and tracks its completion
+        this.fence = VGL.METAL ? MetalNative.call(MetalNative.OP_FENCE_CREATE) : glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
     }
 
     private static final long SCRATCH = MemoryUtil.nmemCalloc(1,4);
 
     public boolean signaled() {
-        if (!this.signaled) {
+        if (!this.signaled && VGL.METAL) {
+            this.signaled = MetalNative.call(MetalNative.OP_FENCE_STATUS, this.fence) != 0;
+        } else if (!this.signaled) {
             /*
             int ret = glClientWaitSync(this.fence, 0, 0);
             if (ret == GL_ALREADY_SIGNALED || ret == GL_CONDITION_SATISFIED) {
@@ -39,6 +43,10 @@ public class GlFence extends TrackedObject {
     @Override
     public void free() {
         super.free0();
-        glDeleteSync(this.fence);
+        if (VGL.METAL) {
+            MetalNative.call(MetalNative.OP_FENCE_DELETE, this.fence);
+        } else {
+            glDeleteSync(this.fence);
+        }
     }
 }

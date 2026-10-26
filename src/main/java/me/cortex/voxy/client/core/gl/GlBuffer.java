@@ -1,5 +1,6 @@
 package me.cortex.voxy.client.core.gl;
 
+import me.cortex.voxy.client.core.gl.metal.MetalNative;
 import me.cortex.voxy.common.util.TrackedObject;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryUtil;
@@ -7,6 +8,8 @@ import org.lwjgl.system.MemoryUtil;
 import static org.lwjgl.opengl.ARBSparseBuffer.GL_SPARSE_STORAGE_BIT_ARB;
 import static org.lwjgl.opengl.GL11.GL_UNSIGNED_BYTE;
 import static org.lwjgl.opengl.GL15.glDeleteBuffers;
+import static me.cortex.voxy.client.core.gl.VGL.nglClearNamedBufferData;
+import static me.cortex.voxy.client.core.gl.VGL.nglClearNamedBufferSubData;
 import static org.lwjgl.opengl.GL45C.*;
 
 public class GlBuffer extends TrackedObject {
@@ -30,9 +33,13 @@ public class GlBuffer extends TrackedObject {
 
     public GlBuffer(long size, int flags, boolean zero) {
         this.flags = flags;
-        this.id = glCreateBuffers();
         this.size = size;
-        glNamedBufferStorage(this.id, size, flags);
+        if (VGL.METAL) {
+            this.id = MetalNative.createBuffer(size, false);
+        } else {
+            this.id = glCreateBuffers();
+            glNamedBufferStorage(this.id, size, flags);
+        }
         if ((flags&GL_SPARSE_STORAGE_BIT_ARB)==0 && zero) {
             this.zero();
         }
@@ -44,7 +51,11 @@ public class GlBuffer extends TrackedObject {
     @Override
     public void free() {
         this.free0();
-        glDeleteBuffers(this.id);
+        if (VGL.METAL) {
+            MetalNative.deleteBuffer(this.id);
+        } else {
+            glDeleteBuffers(this.id);
+        }
 
         COUNT--;
         TOTAL_SIZE -= this.size;
@@ -71,8 +82,10 @@ public class GlBuffer extends TrackedObject {
     public GlBuffer fill(int data) {
         //Clear unpack values
         //Fixed in mesa commit a5c3c452
-        glPixelStorei(GL11.GL_UNPACK_SKIP_ROWS, 0);
-        glPixelStorei(GL11.GL_UNPACK_SKIP_PIXELS, 0);
+        if (!VGL.METAL) {
+            glPixelStorei(GL11.GL_UNPACK_SKIP_ROWS, 0);
+            glPixelStorei(GL11.GL_UNPACK_SKIP_PIXELS, 0);
+        }
 
         MemoryUtil.memPutInt(SCRATCH, data);
         nglClearNamedBufferData(this.id, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, SCRATCH);

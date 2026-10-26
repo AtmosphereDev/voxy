@@ -80,7 +80,15 @@ public class SoftwareModelTextureBakery {
         glPixelStorei(GL_PACK_SKIP_ROWS, 0);
         glPixelStorei(GL_PACK_SKIP_PIXELS, 0);
         glPixelStorei(GL_PACK_ALIGNMENT, 4);
-        glGetTextureImage(((GlTexture) tex).glId(), 0, GL_RGBA, GL_UNSIGNED_BYTE, texture);
+        if (me.cortex.voxy.client.core.gl.VGL.METAL) {
+            //macOS only has OpenGL 4.1 which has no direct state access
+            int previous = glGetInteger(GL_TEXTURE_BINDING_2D);
+            glBindTexture(GL_TEXTURE_2D, ((GlTexture) tex).glId());
+            glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, texture);
+            glBindTexture(GL_TEXTURE_2D, previous);
+        } else {
+            glGetTextureImage(((GlTexture) tex).glId(), 0, GL_RGBA, GL_UNSIGNED_BYTE, texture);
+        }
         this.rasterizer.setSamplerTexture(texture, width, height);
     }
 

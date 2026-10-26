@@ -84,6 +84,11 @@ def gitCommitHash = { ->
 def buildtime = {System.currentTimeSeconds()}
 
 processResources {
+    //The Metal backend for macOS (see native/build.sh), only present when it has been built
+    from(rootProject.file("native/dist")) {
+        into "natives"
+    }
+
     def time = buildtime()
     def hash = gitCommitHash()
     def version = project.version
